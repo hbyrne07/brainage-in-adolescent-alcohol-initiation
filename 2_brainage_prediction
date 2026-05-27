@@ -1,0 +1,64 @@
+library(tidyverse)
+library(tidymodels)
+library(xgboost)
+library(ggplot2)
+library(ggseg)  
+library(dplyr)  
+
+# load model
+model_path <- "model/xgboost_9to19_brain_age_mod.rds" 
+xgb_mod <- readRDS(model_path)
+
+# load data
+model_features <- readRDS("model_features.Rds") 
+model_features_smri <- model_features %>% dplyr::select(-participant_id, -age, -sex)
+
+# extract feature names
+model_feature_names <- xgb_mod$fit$feature_names
+cat("Model expects", length(model_feature_names), "features:\n")
+
+# subset and reorder to match model 
+aligned_data <- model_features_smri[, model_feature_names[model_feature_names %in% colnames(model_features_smri)]]
+
+# matrix (raw values)
+aligned_matrix <- as.matrix(aligned_data)
+
+# check
+dim(aligned_matrix)  # [11324, 188]
+str(aligned_matrix)  # Confirm large numeric values (e.g., volumes ~1e6)
+
+# predict
+test_out <- predict(xgb_mod$fit, newdata = aligned_matrix)
+
+# as tibble
+test_out_df <- tibble(.pred = as.numeric(test_out))
+
+# full df
+brain_age_df <- model_features %>%
+  bind_cols(test_out_df) %>%
+  mutate(
+    truth = age,
+    gap = .pred - truth
+  )
+
+# raw metrics 
+cat("Raw MAE:", mean(abs(brain_age_df$gap), na.rm = TRUE), "years\n")
+brain_age_df %>% metrics(truth = truth, estimate = .pred)
+
+# bias correction (from model validation)
+bias_intercept <- 6.41
+bias_slope <- 0.55
+
+brain_age_corrected_df <- brain_age_df %>%
+  mutate(
+    corrected_pred = (.pred - bias_intercept) / bias_slope,
+    corrected_gap = corrected_pred - truth
+  )
+
+# corrected metrics
+brain_age_corrected_df %>% metrics(truth = truth, estimate = corrected_pred)
+brain_age <- brain_age_corrected_df %>% dplyr::select(c(participant_id, corrected_gap))
+brain_age <- brain_age %>% rename(BrainAGE = corrected_gap) # optional
+
+# save out
+write_csv(brain_age, "abcd_brainage.csv")
