@@ -1,0 +1,252 @@
+############################################
+# format imaging variables
+############################################
+
+# load harmonized imaging data 
+vol <- read_csv('combat_harmonized_vol.csv')
+sa <- read_csv('combat_harmonized_sa.csv')
+aseg <- read_csv('combat_harmonized_aseg.csv')
+
+# combine 
+imaging_data <- vol %>%
+  left_join(sa, by = c("participant_id", "session_id")) %>%
+  left_join(aseg, by = c("participant_id", "session_id")) 
+
+# Custom function to read a TSV file and filter to baseline data immediately
+read_and_filter_baseline <- function(file_path) {
+  
+  data <- read.delim(file_path, sep = "\t", header = TRUE)
+  
+  if ("session_id" %in% colnames(data)) {
+    data <- data %>%
+      filter(session_id == "ses-00A")  # Replace blank with the baseline session id from data dictionary
+  } else {
+    warning(paste("No 'session' column in", file_path, "- no baseline filtering applied.")) # this will tell us if any errors
+  }
+
+  return(data)}
+
+# load age 
+demo <- read_and_filter_baseline('~/ABCD/abcd-data-release-6.0/imaging/ab_p_demo.tsv') %>% dplyr::select("participant_id","ab_p_demo_age")
+demo <- demo %>% rename(age = ab_p_demo_age)
+
+# load sex 
+sex <- read_and_filter_baseline('~/ABCD/abcd-data-release-6.0/imaging/ab_g_stc.tsv') %>%
+  dplyr::select("participant_id", "ab_g_stc__cohort_sex")
+sex <- sex %>% rename(sex = ab_g_stc__cohort_sex)
+
+# rename cols to Drobinin model naming convention 
+brainage_data <- imaging_data %>%
+  rename(
+    FS_InterCranial_Vol = mr_y_smri__vol__aseg__icv_sum,
+    FS_LCort_GM_Vol = mr_y_smri__vol__dsk__lh_sum,
+    FS_RCort_GM_Vol = mr_y_smri__vol__dsk__rh_sum,
+    FS_TotCort_GM_Vol = mr_y_smri__vol__dsk_sum,
+    FS_SubCort_GM_Vol = mr_y_smri__vol__aseg__scgv_sum,
+    FS_SupraTentorial_Vol = mr_y_smri__vol__aseg__stv_sum,
+    FS_L_LatVent_Vol = mr_y_smri__vol__aseg__lv__lh_sum,
+    FS_L_InfLatVent_Vol = mr_y_smri__vol__aseg__ilv__lh_sum,
+    FS_L_Cerebellum_WM_Vol = mr_y_smri__vol__aseg__cbwm__lh_sum,
+    FS_L_Cerebellum_Cort_Vol = mr_y_smri__vol__aseg__cbc__lh_sum,
+    FS_L_ThalamusProper_Vol = mr_y_smri__vol__aseg__th__lh_sum,
+    FS_L_Caudate_Vol = mr_y_smri__vol__aseg__cd__lh_sum,
+    FS_L_Putamen_Vol = mr_y_smri__vol__aseg__pt__lh_sum,
+    FS_L_Pallidum_Vol = mr_y_smri__vol__aseg__pl__lh_sum,
+    FS_3rdVent_Vol = mr_y_smri__vol__aseg__3rdv_sum,
+    FS_4thVent_Vol = mr_y_smri__vol__aseg__4thv_sum,
+    FS_BrainStem_Vol = mr_y_smri__vol__aseg__bs_sum,
+    FS_L_Hippo_Vol = mr_y_smri__vol__aseg__hc__lh_sum,
+    FS_L_Amygdala_Vol = mr_y_smri__vol__aseg__ag__lh_sum,
+    FS_CSF_Vol = mr_y_smri__vol__aseg__csf_sum,
+    FS_L_AccumbensArea_Vol = mr_y_smri__vol__aseg__ab__lh_sum,
+    FS_L_VentDC_Vol = mr_y_smri__vol__aseg__vdc__lh_sum,
+    FS_R_LatVent_Vol = mr_y_smri__vol__aseg__lv__rh_sum,
+    FS_R_InfLatVent_Vol = mr_y_smri__vol__aseg__ilv__rh_sum,
+    FS_R_Cerebellum_WM_Vol = mr_y_smri__vol__aseg__cbwm__rh_sum,
+    FS_R_Cerebellum_Cort_Vol = mr_y_smri__vol__aseg__cbc__rh_sum,
+    FS_R_ThalamusProper_Vol = mr_y_smri__vol__aseg__th__rh_sum,
+    FS_R_Caudate_Vol = mr_y_smri__vol__aseg__cd__rh_sum,
+    FS_R_Putamen_Vol = mr_y_smri__vol__aseg__pt__rh_sum,
+    FS_R_Pallidum_Vol = mr_y_smri__vol__aseg__pl__rh_sum,
+    FS_R_Hippo_Vol = mr_y_smri__vol__aseg__hc__rh_sum,
+    FS_R_Amygdala_Vol = mr_y_smri__vol__aseg__ag__rh_sum,
+    FS_R_AccumbensArea_Vol = mr_y_smri__vol__aseg__ab__rh_sum,
+    FS_R_VentDC_Vol = mr_y_smri__vol__aseg__vdc__rh_sum,
+    FS_CC_Posterior_Vol = mr_y_smri__vol__aseg__ccp_sum,
+    FS_CC_MidPosterior_Vol = mr_y_smri__vol__aseg__ccpm_sum,
+    FS_CC_Central_Vol = mr_y_smri__vol__aseg__ccc_sum,
+    FS_CC_MidAnterior_Vol = mr_y_smri__vol__aseg__ccam_sum,
+    FS_CC_Anterior_Vol = mr_y_smri__vol__aseg__cca_sum,
+    FS_L_Bankssts_Area = mr_y_smri__area__dsk__bstmps__lh_sum,
+    FS_L_Caudalanteriorcingulate_Area = mr_y_smri__area__dsk__cac__lh_sum,
+    FS_L_Caudalmiddlefrontal_Area = mr_y_smri__area__dsk__cmfrt__lh_sum,
+    FS_L_Cuneus_Area = mr_y_smri__area__dsk__cn__lh_sum,
+    FS_L_Entorhinal_Area = mr_y_smri__area__dsk__er__lh_sum,
+    FS_L_Fusiform_Area = mr_y_smri__area__dsk__ff__lh_sum,
+    FS_L_Inferiorparietal_Area = mr_y_smri__area__dsk__iprt__lh_sum,
+    FS_L_Inferiortemporal_Area = mr_y_smri__area__dsk__itmp__lh_sum,
+    FS_L_Isthmuscingulate_Area = mr_y_smri__area__dsk__ic__lh_sum,
+    FS_L_Lateraloccipital_Area = mr_y_smri__area__dsk__locc__lh_sum,
+    FS_L_Lateralorbitofrontal_Area = mr_y_smri__area__dsk__lobfrt__lh_sum,
+    FS_L_Lingual_Area = mr_y_smri__area__dsk__lg__lh_sum,
+    FS_L_Medialorbitofrontal_Area = mr_y_smri__area__dsk__mobfrt__lh_sum,
+    FS_L_Middletemporal_Area = mr_y_smri__area__dsk__mtmp__lh_sum,
+    FS_L_Parahippocampal_Area = mr_y_smri__area__dsk__ph__lh_sum,
+    FS_L_Paracentral_Area = mr_y_smri__area__dsk__pactr__lh_sum,
+    FS_L_Parsopercularis_Area = mr_y_smri__area__dsk__pop__lh_sum,
+    FS_L_Parsorbitalis_Area = mr_y_smri__area__dsk__pob__lh_sum,
+    FS_L_Parstriangularis_Area = mr_y_smri__area__dsk__ptg__lh_sum,
+    FS_L_Pericalcarine_Area = mr_y_smri__area__dsk__pcc__lh_sum,
+    FS_L_Postcentral_Area = mr_y_smri__area__dsk__poctr__lh_sum,
+    FS_L_Posteriorcingulate_Area = mr_y_smri__area__dsk__pcg__lh_sum,
+    FS_L_Precentral_Area = mr_y_smri__area__dsk__prctr__lh_sum,
+    FS_L_Precuneus_Area = mr_y_smri__area__dsk__prcn__lh_sum,
+    FS_L_Rostralanteriorcingulate_Area = mr_y_smri__area__dsk__rac__lh_sum,
+    FS_L_Rostralmiddlefrontal_Area = mr_y_smri__area__dsk__rmfrt__lh_sum,
+    FS_L_Superiorfrontal_Area = mr_y_smri__area__dsk__sfrt__lh_sum,
+    FS_L_Superiorparietal_Area = mr_y_smri__area__dsk__sprt__lh_sum,
+    FS_L_Superiortemporal_Area = mr_y_smri__area__dsk__stmp__lh_sum,
+    FS_L_Supramarginal_Area = mr_y_smri__area__dsk__sm__lh_sum,
+    FS_L_Frontalpole_Area = mr_y_smri__area__dsk__pfrt__lh_sum,
+    FS_L_Temporalpole_Area = mr_y_smri__area__dsk__ptmp__lh_sum,
+    FS_L_Transversetemporal_Area = mr_y_smri__area__dsk__ttmp__lh_sum,
+    FS_L_Insula_Area = mr_y_smri__area__dsk__ins__lh_sum,
+    FS_R_Bankssts_Area = mr_y_smri__area__dsk__bstmps__rh_sum,
+    FS_R_Caudalanteriorcingulate_Area = mr_y_smri__area__dsk__cac__rh_sum,
+    FS_R_Caudalmiddlefrontal_Area = mr_y_smri__area__dsk__cmfrt__rh_sum,
+    FS_R_Cuneus_Area = mr_y_smri__area__dsk__cn__rh_sum,
+    FS_R_Entorhinal_Area = mr_y_smri__area__dsk__er__rh_sum,
+    FS_R_Fusiform_Area = mr_y_smri__area__dsk__ff__rh_sum,
+    FS_R_Inferiorparietal_Area = mr_y_smri__area__dsk__iprt__rh_sum,
+    FS_R_Inferiortemporal_Area = mr_y_smri__area__dsk__itmp__rh_sum,
+    FS_R_Isthmuscingulate_Area = mr_y_smri__area__dsk__ic__rh_sum,
+    FS_R_Lateraloccipital_Area = mr_y_smri__area__dsk__locc__rh_sum,
+    FS_R_Lateralorbitofrontal_Area = mr_y_smri__area__dsk__lobfrt__rh_sum,
+    FS_R_Lingual_Area = mr_y_smri__area__dsk__lg__rh_sum,
+    FS_R_Medialorbitofrontal_Area = mr_y_smri__area__dsk__mobfrt__rh_sum,
+    FS_R_Middletemporal_Area = mr_y_smri__area__dsk__mtmp__rh_sum,
+    FS_R_Parahippocampal_Area = mr_y_smri__area__dsk__ph__rh_sum,
+    FS_R_Paracentral_Area = mr_y_smri__area__dsk__pactr__rh_sum,
+    FS_R_Parsopercularis_Area = mr_y_smri__area__dsk__pop__rh_sum,
+    FS_R_Parsorbitalis_Area = mr_y_smri__area__dsk__pob__rh_sum,
+    FS_R_Parstriangularis_Area = mr_y_smri__area__dsk__ptg__rh_sum,
+    FS_R_Pericalcarine_Area = mr_y_smri__area__dsk__pcc__rh_sum,
+    FS_R_Postcentral_Area = mr_y_smri__area__dsk__poctr__rh_sum,
+    FS_R_Posteriorcingulate_Area = mr_y_smri__area__dsk__pcg__rh_sum,
+    FS_R_Precentral_Area = mr_y_smri__area__dsk__prctr__rh_sum,
+    FS_R_Precuneus_Area = mr_y_smri__area__dsk__prcn__rh_sum,
+    FS_R_Rostralanteriorcingulate_Area = mr_y_smri__area__dsk__rac__rh_sum,
+    FS_R_Rostralmiddlefrontal_Area = mr_y_smri__area__dsk__rmfrt__rh_sum,
+    FS_R_Superiorfrontal_Area = mr_y_smri__area__dsk__sfrt__rh_sum,
+    FS_R_Superiorparietal_Area = mr_y_smri__area__dsk__sprt__rh_sum,
+    FS_R_Superiortemporal_Area = mr_y_smri__area__dsk__stmp__rh_sum,
+    FS_R_Supramarginal_Area = mr_y_smri__area__dsk__sm__rh_sum,
+    FS_R_Frontalpole_Area = mr_y_smri__area__dsk__pfrt__rh_sum,
+    FS_R_Temporalpole_Area = mr_y_smri__area__dsk__ptmp__rh_sum,
+    FS_R_Transversetemporal_Area = mr_y_smri__area__dsk__ttmp__rh_sum,
+    FS_R_Insula_Area = mr_y_smri__area__dsk__ins__rh_sum,
+    FS_LCort_GM_Area = mr_y_smri__area__dsk__lh_sum,
+    FS_RCort_GM_Area = mr_y_smri__area__dsk__rh_sum,
+    FS_TotCort_GM_Area = mr_y_smri__area__dsk_sum,
+    FS_L_Bankssts_GrayVol = mr_y_smri__vol__dsk__bstmps__lh_sum,
+    FS_L_Caudalanteriorcingulate_GrayVol = mr_y_smri__vol__dsk__cac__lh_sum,
+    FS_L_Caudalmiddlefrontal_GrayVol = mr_y_smri__vol__dsk__cmfrt__lh_sum,
+    FS_L_Cuneus_GrayVol = mr_y_smri__vol__dsk__cn__lh_sum,
+    FS_L_Entorhinal_GrayVol = mr_y_smri__vol__dsk__er__lh_sum,
+    FS_L_Fusiform_GrayVol = mr_y_smri__vol__dsk__ff__lh_sum,
+    FS_L_Inferiorparietal_GrayVol = mr_y_smri__vol__dsk__iprt__lh_sum,
+    FS_L_Inferiortemporal_GrayVol = mr_y_smri__vol__dsk__itmp__lh_sum,
+    FS_L_Isthmuscingulate_GrayVol = mr_y_smri__vol__dsk__ic__lh_sum,
+    FS_L_Lateraloccipital_GrayVol = mr_y_smri__vol__dsk__locc__lh_sum,
+    FS_L_Lateralorbitofrontal_GrayVol = mr_y_smri__vol__dsk__lobfrt__lh_sum,
+    FS_L_Lingual_GrayVol = mr_y_smri__vol__dsk__lg__lh_sum,
+    FS_L_Medialorbitofrontal_GrayVol = mr_y_smri__vol__dsk__mobfrt__lh_sum,
+    FS_L_Middletemporal_GrayVol = mr_y_smri__vol__dsk__mtmp__lh_sum,
+    FS_L_Parahippocampal_GrayVol = mr_y_smri__vol__dsk__ph__lh_sum,
+    FS_L_Paracentral_GrayVol = mr_y_smri__vol__dsk__pactr__lh_sum,
+    FS_L_Parsopercularis_GrayVol = mr_y_smri__vol__dsk__pop__lh_sum,
+    FS_L_Parsorbitalis_GrayVol = mr_y_smri__vol__dsk__pob__lh_sum,
+    FS_L_Parstriangularis_GrayVol = mr_y_smri__vol__dsk__ptg__lh_sum,
+    FS_L_Pericalcarine_GrayVol = mr_y_smri__vol__dsk__pcc__lh_sum,
+    FS_L_Postcentral_GrayVol = mr_y_smri__vol__dsk__poctr__lh_sum,
+    FS_L_Posteriorcingulate_GrayVol = mr_y_smri__vol__dsk__pcg__lh_sum,
+    FS_L_Precentral_GrayVol = mr_y_smri__vol__dsk__prctr__lh_sum,
+    FS_L_Precuneus_GrayVol = mr_y_smri__vol__dsk__prcn__lh_sum,
+    FS_L_Rostralanteriorcingulate_GrayVol = mr_y_smri__vol__dsk__rac__lh_sum,
+    FS_L_Rostralmiddlefrontal_GrayVol = mr_y_smri__vol__dsk__rmfrt__lh_sum,
+    FS_L_Superiorfrontal_GrayVol = mr_y_smri__vol__dsk__sfrt__lh_sum,
+    FS_L_Superiorparietal_GrayVol = mr_y_smri__vol__dsk__sprt__lh_sum,
+    FS_L_Superiortemporal_GrayVol = mr_y_smri__vol__dsk__stmp__lh_sum,
+    FS_L_Supramarginal_GrayVol = mr_y_smri__vol__dsk__sm__lh_sum,
+    FS_L_Frontalpole_GrayVol = mr_y_smri__vol__dsk__pfrt__lh_sum,
+    FS_L_Temporalpole_GrayVol = mr_y_smri__vol__dsk__ptmp__lh_sum,
+    FS_L_Transversetemporal_GrayVol = mr_y_smri__vol__dsk__ttmp__lh_sum,
+    FS_L_Insula_GrayVol = mr_y_smri__vol__dsk__ins__lh_sum,
+    FS_R_Bankssts_GrayVol = mr_y_smri__vol__dsk__bstmps__rh_sum,
+    FS_R_Caudalanteriorcingulate_GrayVol = mr_y_smri__vol__dsk__cac__rh_sum,
+    FS_R_Caudalmiddlefrontal_GrayVol = mr_y_smri__vol__dsk__cmfrt__rh_sum,
+    FS_R_Cuneus_GrayVol = mr_y_smri__vol__dsk__cn__rh_sum,
+    FS_R_Entorhinal_GrayVol = mr_y_smri__vol__dsk__er__rh_sum,
+    FS_R_Fusiform_GrayVol = mr_y_smri__vol__dsk__ff__rh_sum,
+    FS_R_Inferiorparietal_GrayVol = mr_y_smri__vol__dsk__iprt__rh_sum,
+    FS_R_Inferiortemporal_GrayVol = mr_y_smri__vol__dsk__itmp__rh_sum,
+    FS_R_Isthmuscingulate_GrayVol = mr_y_smri__vol__dsk__ic__rh_sum,
+    FS_R_Lateraloccipital_GrayVol = mr_y_smri__vol__dsk__locc__rh_sum,
+    FS_R_Lateralorbitofrontal_GrayVol = mr_y_smri__vol__dsk__lobfrt__rh_sum,
+    FS_R_Lingual_GrayVol = mr_y_smri__vol__dsk__lg__rh_sum,
+    FS_R_Medialorbitofrontal_GrayVol = mr_y_smri__vol__dsk__mobfrt__rh_sum,
+    FS_R_Middletemporal_GrayVol = mr_y_smri__vol__dsk__mtmp__rh_sum,
+    FS_R_Parahippocampal_GrayVol = mr_y_smri__vol__dsk__ph__rh_sum,
+    FS_R_Paracentral_GrayVol = mr_y_smri__vol__dsk__pactr__rh_sum,
+    FS_R_Parsopercularis_GrayVol = mr_y_smri__vol__dsk__pop__rh_sum,
+    FS_R_Parsorbitalis_GrayVol = mr_y_smri__vol__dsk__pob__rh_sum,
+    FS_R_Parstriangularis_GrayVol = mr_y_smri__vol__dsk__ptg__rh_sum,
+    FS_R_Pericalcarine_GrayVol = mr_y_smri__vol__dsk__pcc__rh_sum,
+    FS_R_Postcentral_GrayVol = mr_y_smri__vol__dsk__poctr__rh_sum,
+    FS_R_Posteriorcingulate_GrayVol = mr_y_smri__vol__dsk__pcg__rh_sum,
+    FS_R_Precentral_GrayVol = mr_y_smri__vol__dsk__prctr__rh_sum,
+    FS_R_Precuneus_GrayVol = mr_y_smri__vol__dsk__prcn__rh_sum,
+    FS_R_Rostralanteriorcingulate_GrayVol = mr_y_smri__vol__dsk__rac__rh_sum,
+    FS_R_Rostralmiddlefrontal_GrayVol = mr_y_smri__vol__dsk__rmfrt__rh_sum,
+    FS_R_Superiorfrontal_GrayVol = mr_y_smri__vol__dsk__sfrt__rh_sum,
+    FS_R_Superiorparietal_GrayVol = mr_y_smri__vol__dsk__sprt__rh_sum,
+    FS_R_Superiortemporal_GrayVol = mr_y_smri__vol__dsk__stmp__rh_sum,
+    FS_R_Supramarginal_GrayVol = mr_y_smri__vol__dsk__sm__rh_sum,
+    FS_R_Frontalpole_GrayVol = mr_y_smri__vol__dsk__pfrt__rh_sum,
+    FS_R_Temporalpole_GrayVol = mr_y_smri__vol__dsk__ptmp__rh_sum,
+    FS_R_Transversetemporal_GrayVol = mr_y_smri__vol__dsk__ttmp__rh_sum,
+    FS_R_Insula_GrayVol = mr_y_smri__vol__dsk__ins__rh_sum
+  )
+
+# Add NA placeholders for missing FS vars, replicating Whitmore et al. (2023)
+brainage_data[, c("FS_BrainSeg_Vol", "FS_BrainSeg_Vol_No_Vent", "FS_BrainSeg_Vol_No_Vent_Surf", 
+                  "FS_SupraTentorial_Vol_No_Vent", "FS_SupraTentorial_No_Vent_Voxel_Count", 
+                  "FS_Mask_Vol", "FS_BrainSegVol_eTIV_Ratio", "FS_MaskVol_eTIV_Ratio", 
+                  "FS_Total_GM_Vol", "FS_L_Vessel_Vol", "FS_L_ChoroidPlexus_Vol", 
+                  "FS_R_Vessel_Vol", "FS_R_ChoroidPlexus_Vol", "FS_OpticChiasm_Vol")] <- NA
+
+# drop irrelevant columns 
+brainage_data <- brainage_data %>%
+  dplyr::select(-any_of(c("mr_y_smri__vol__aseg__cwm__lh_sum", "mr_y_smri__vol__aseg__cwm__rh_sum", 
+                   "mr_y_smri__vol__aseg__avs_sum", "mr_y_smri__vol__aseg__lvs_sum", 
+                   "mr_y_smri__vol__aseg__whb_sum", "mr_y_smri__vol__aseg__wmh_sum")))
+
+brainage_data <- brainage_data %>%
+  dplyr::select(-c(session_id, FS_LCort_GM_Area, FS_RCort_GM_Area, FS_TotCort_GM_Area, FS_R_Cerebellum_Cort_Vol))
+
+# join with age
+brainage_data <- brainage_data %>% 
+  left_join(demo, by = "participant_id")  # adds age
+
+# join with sex; this isn't actually needed for brainage estimation - could ignore as pulled in later from covariates
+brainage_data <- brainage_data %>% 
+  left_join(sex, by = "participant_id")  # adds sex
+
+# recode sex variable (if previous step performed)
+brainage_data$sex <- factor(brainage_data$sex, levels = c(1, 2), labels = c("Male", "Female"))
+
+# Save out
+saveRDS(brainage_data, "model_features.Rds")
+
+# Verify this worked
+dim(brainage_data)  
