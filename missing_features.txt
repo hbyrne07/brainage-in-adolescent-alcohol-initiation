@@ -1,0 +1,14 @@
+FS_BrainSeg_Vol
+FS_BrainSeg_Vol_No_Vent
+FS_BrainSeg_Vol_No_Vent_Surf
+FS_SupraTentorial_Vol_No_Vent
+FS_SupraTentorial_No_Vent_Voxel_Count
+FS_Mask_Vol
+FS_BrainSegVol_eTIV_Ratio
+FS_MaskVol_eTIV_Ratio
+FS_Total_GM_Vol
+FS_L_Vessel_Vol
+FS_L_ChoroidPlexus_Vol
+FS_R_Vessel_Vol
+FS_R_ChoroidPlexus_Vol
+FS_OpticChiasm_Vol
